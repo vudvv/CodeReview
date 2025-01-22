@@ -4,15 +4,14 @@ import { minimatch } from 'minimatch'
 import { Chat } from './chat.js';
 import log from 'loglevel';
 
-const OPENAI_API_KEY = 'OPENAI_API_KEY';
 const MAX_PATCH_COUNT = process.env.MAX_PATCH_LENGTH
   ? +process.env.MAX_PATCH_LENGTH
   : Infinity;
 
 export const robot = (app: Probot) => {
   const loadChat = async (context: Context) => {
-    if (process.env.OPENAI_API_KEY) {
-      return new Chat(process.env.OPENAI_API_KEY);
+    if (process.env.OLLAMA_API_URL) {
+      return new Chat(process.env.OLLAMA_API_URL);
     }
 
     const repo = context.repo();
@@ -23,7 +22,7 @@ export const robot = (app: Probot) => {
         {
           owner: repo.owner,
           repo: repo.repo,
-          name: OPENAI_API_KEY,
+          name: 'OLLAMA_API_URL',
         }
       )) as any;
 
@@ -37,7 +36,7 @@ export const robot = (app: Probot) => {
         repo: repo.repo,
         owner: repo.owner,
         issue_number: context.pullRequest().pull_number,
-        body: `Seems you are using me but didn't get OPENAI_API_KEY seted in Variables/Secrets for this repo. you could follow [readme](https://github.com/anc95/ChatGPT-CodeReview) for more information`,
+        body: `Seems you are using me but didn't get OLLAMA_API_URL seted in Variables/Secrets for this repo`,
       });
       return null;
     }
@@ -136,7 +135,7 @@ export const robot = (app: Probot) => {
         return 'no change';
       }
 
-      console.time('gpt cost');
+      console.time('ollama cost');
 
       const ress = [];
 
@@ -172,7 +171,7 @@ export const robot = (app: Probot) => {
           repo: repo.repo,
           owner: repo.owner,
           pull_number: context.pullRequest().pull_number,
-          body: "Code review by ChatGPT",
+          body: "Code review by DRJOY AI",
           event: 'COMMENT',
           commit_id: commits[commits.length - 1].sha,
           comments: ress,
@@ -181,7 +180,7 @@ export const robot = (app: Probot) => {
         log.info(`Failed to create review`, e);
       }
 
-      console.timeEnd('gpt cost');
+      console.timeEnd('ollama cost');
       log.info(
         'successfully reviewed',
         context.payload.pull_request.html_url

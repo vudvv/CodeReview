@@ -1,29 +1,10 @@
-import { OpenAI, AzureOpenAI } from 'openai';
+import { Ollama } from 'ollama'
 
 export class Chat {
-  private openai: OpenAI | AzureOpenAI;
-  private isAzure: boolean;
+  private ollama: Ollama;
 
-  constructor(apikey: string) {
-    this.isAzure = Boolean(
-        process.env.AZURE_API_VERSION && process.env.AZURE_DEPLOYMENT,
-    );
-
-    if (this.isAzure) {
-      // Azure OpenAI configuration
-      this.openai = new AzureOpenAI({
-        apiKey: apikey,
-        endpoint: process.env.OPENAI_API_ENDPOINT || '',
-        apiVersion: process.env.AZURE_API_VERSION || '',
-        deployment: process.env.AZURE_DEPLOYMENT || '',
-      });
-    } else {
-      // Standard OpenAI configuration
-      this.openai = new OpenAI({
-        apiKey: apikey,
-        baseURL: process.env.OPENAI_API_ENDPOINT || 'https://api.openai.com/v1',
-      });
-    }
+  constructor(ollamaUrl: string) {
+    this.ollama = new Ollama({ host: ollamaUrl })
   }
 
   private generatePrompt = (patch: string) => {
@@ -48,25 +29,18 @@ export class Chat {
     console.time('code-review cost');
     const prompt = this.generatePrompt(patch);
 
-    const res = await this.openai.chat.completions.create({
+    const res = await this.ollama.chat({
       messages: [
         {
           role: 'user',
           content: prompt,
         },
       ],
-      model: process.env.MODEL || 'gpt-4o-mini',
-      temperature: +(process.env.temperature || 0) || 1,
-      top_p: +(process.env.top_p || 0) || 1,
-      max_tokens: process.env.max_tokens ? +process.env.max_tokens : undefined,
+      model: process.env.MODEL || 'llama3.2',
     });
 
     console.timeEnd('code-review cost');
 
-    if (res.choices.length) {
-      return res.choices[0].message.content;
-    }
-
-    return '';
+    return res.message.content;
   };
 }
